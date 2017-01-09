@@ -1,0 +1,254 @@
+
+# 项目开发指导
+
+## 技术栈
+
+- iuap design
+- node.js
+- koa
+- gulp
+- director.js
+- less
+- require.js
+- babel
+- git
+- react
+
+
+
+## 下载项目并且启动
+
+```
+# 安装全局uba
+$ npm install uba -g
+
+# 打开uba界面选择该最佳实践
+$ uba init
+
+# 安装依赖
+$ npm install
+# 启动开发
+$ npm run dev
+# 访问http://localhost:8080
+```
+
+## 开发和调试
+
+两条命令支持开发：
+- 启动开发
+```
+$ npm run dev
+```
+
+- 清空dist目录下的资源
+```
+$ npm run clean
+```
+### 目录说明
+
+- docs/ 文档
+- examples/ 示例
+- gulpfile.js gulp构建脚本
+- dist/ 编译产出的资源目录
+- index.html 调试首页
+- conf/mock.js 模拟数据配置
+- mock/ 模拟接口json数据
+- node_modules/ node第三方包
+- package.json npm管理文件
+- README.md 项目说明文件
+- conf 相关配置
+- server/ 本地服务和代理配置
+- src/ 开发源代码目录
+  - pages
+		* time
+		* home
+		* ssc
+		* corehr
+  - static 图片、音频、视频...
+  - util 公共方法或是插件的抽取
+  - styles 全局样式文件
+- vendor/ 第三方插件、框架、类库、路由等
+
+
+### 开发起步
+
+- 在 `src/pages` 目录下新增功能页面，可参考其他目录的代码。
+- 为了方便调试，在 `index.html` 文件内新增你的页面 URL，具体可以看里面的注释部分。
+
+```
+$ cd src/pages/time && mkdir demo
+$ cd demo && touch demo.html demo.js demo.css
+```
+
+代码清单：`src/pages/time/demo/demo.html`
+
+```
+.demo {
+  border: 1px solid #ccc;
+}
+```
+
+代码清单：`src/pages/time/demo/demo.css`
+
+```
+<div class="demo">
+  <h3>
+    这是一个示例页面的html代码片段
+  </h3>
+</div>
+```
+
+代码清单：`src/pages/time/demo/demo.js`
+
+```
+define(function(require, module, exports){
+  // 引入相关的功能插件或模块
+  var html = require('text!./demo.html');
+  var demoStyles = require('css!./demo.css');
+
+  function DemoLogic(){
+    this.init = function(){
+      alert('hey, man!');
+    }
+  }
+
+  // 以下部分代码基本是格式化的，暴露的init方法用于和portal进行集成
+  return {
+		init: function( content ) {
+			// 插入html片段
+			content.innerHTML = html;
+			// 执行我们的业务主逻辑
+			new DemoLogic().init();
+		}
+	}
+
+})
+
+```
+
+代码清单：`conf/route.js` (配置页面路由)
+
+```
+{
+     "catogory": "pages/time",  // 配置锁定的类（代码目录）
+       "data": [
+                {
+                    url: "demo/index",   // 配置具体的js文件
+                    name: "demo"           // 添加标识 提高可读性
+                }
+            ]
+},
+
+```
+
+对demo.js的基本说明：引入了相应的html片段和css样式，另外，已经加载了以下公共的类库或是框架：
+
+1. `bootstrap`
+2. `director` **处理前端路由**
+3. `jquery`
+4. `knockout` **前端MVVM框架**
+5. `require`
+6. `hrfonts`  **hrfonts是UE通过iconfont制作的图标字体库**
+7. `font-awesome`
+8. `uui`
+
+**iuap design 是 用友网络FED团队开发的前端集成解决方案，包括前端基础库sparrow.js、前端UI框架neoui、基于mvvm框架knockout扩展的应用数据管理库kero、ui和数据模型连接的kero-adapter**
+
+这样基本编辑之后，在`index.html`文件中按照注释说明，添加你新增页面的导航，代码如下：
+
+```
+<a href="#/dist/pages/demo/demo">
+  <i class="demo-menu-icon u-color-grey-400 fa fa-home fa-2x" role="presentation"></i>
+  示例
+</a>
+```
+
+### 数据模拟和联调
+
+调试是开发过程中关键而重要的一步，经常在这个阶段出现一些问题，建议的开发步骤是：
+1. 前端本地模拟数据调试，跑通业务逻辑
+2. 前后端本地调试，跑通接口数据
+3. 部署到服务器上联调
+
+#### 前端本地模拟数据调试
+
+- 数据模拟配置文件： `mock.js`，先在这个文件中新增一条模拟路由：
+
+```
+{
+	  type:"get",         // 请求类型
+	  url:"/demo/data",   //请求url
+	  json:"demo.json"    //模拟数据文件，路径地址相对于mock目录，**可以创建二级甚至三级目录，不要只在一级目录创建文件**
+}
+```
+
+- 在mock目录下新增相应的json模拟数据
+
+```
+$ cd mockData && touch demo.json
+```
+
+编辑demo.json里面的模拟数据，代码清单：`mock/demo.json`
+
+```
+{
+    "statusCode": 200,
+    "message": "操作成功",
+    "method": null,
+    "data": {
+        "name": "guoyongfeng"
+    },
+    "callbackType": null
+}
+```
+
+具体应该写什么样的模拟数据，需要前后端提前约定模拟接口和接口数据。
+
+- 现在我们是本地模拟数据，请修改`gulpfile.js`里面的`useProxy`为`false`。
+- 在demo.js文件里面编辑代码，获取我们模拟的数据
+
+```
+define(function(require, module, exports){
+
+  // 引入相关的功能插件或模块
+  var html = require('text!./demo.html');
+  var demoStyles = require('css!./demo.css');
+
+  function DemoLogic(){
+    this.init = function(){
+      alert('hey, man!');
+      this.getData();
+    }
+  }
+
+  DemoLogic.prototype = {
+    getData: function(){
+      $.ajax({
+        url: '/demo/data',
+        type: 'get',
+        dataType: 'json',
+        success: function( res ){
+          alert( res.data.name );
+        }
+      })
+    }
+  };
+
+  // 以下部分代码基本是格式化的，暴露的init方法用于和portal进行集成
+  return {
+		init: function( content ) {
+			// 插入html片段
+			content.innerHTML = html;
+			// 执行我们的业务主逻辑
+			new DemoLogic().init();
+		}
+	}
+
+})
+
+```
+
+#### 前后端本地联调
+
+- 将`app.js`文件中的`useProxy`值设置为`true`即可
+- `app.js`里有个host字段用于配置请求哪个服务器地址的数据，默认是`http://172.20.14.92`，在前后端本地联调过程中，可以修改这个host指到对应的服务端工程师本机的服务地址，如：`var host = 'http://10.1.255.252:8081';`
